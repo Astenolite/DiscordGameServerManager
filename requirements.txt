@@ -1,0 +1,3 @@
+discord.py
+Jinja2
+pydantic

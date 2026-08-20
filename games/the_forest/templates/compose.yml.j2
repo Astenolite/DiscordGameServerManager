@@ -1,0 +1,24 @@
+services:
+  theforest:
+    image: justmiles/the-forest:latest
+    container_name: "{{ server_name }}"
+    restart: unless-stopped
+
+    ports:
+      - "{{ port1 }}:8766"
+      - "{{ port2 }}:27015"
+      - "{{ port3 }}:27016"
+
+    volumes:
+      - "{{ server_directory_path }}/saves:/savesMultiplayer"
+      - "{{ server_directory_path }}/game:/game"
+
+    environment:
+      SERVER_STEAM_ACCOUNT: "{{ server_steam_account }}"
+      SERVER_IP: 172.20.0.2
+      SERVER_NAME: "{{ server_name }}"
+      SERVER_PLAYERS: "{{ max_players }}"
+      SERVER PASSWORD: "{{ server_password }}"
+      SERVER_PASSWORD_ADMIN: "{{ server_admin_password }}"
+      DIFFICULTY: "{{ difficulty }}"
+    

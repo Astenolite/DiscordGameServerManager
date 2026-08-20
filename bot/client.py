@@ -1,0 +1,126 @@
+import discord
+from discord.ext import commands
+from discord.app_commands import Group
+
+from games.registry import GAME_REGISTRY
+
+class GameServerManagerBot(commands.Bot):
+    def __init__(
+        self,
+        *,
+        command_managers: dict,
+        server_manager, 
+        guild_settings_service,
+        permission_service,
+        dev_guild_id: int | None = None,
+    ):
+        intents = discord.Intents.default()
+        super().__init__(
+            command_prefix="!",
+            intents=intents,
+        )
+
+        self.server_manager = server_manager
+        self.command_managers = command_managers
+        self.guild_settings_service = guild_settings_service
+        self.permission_service = permission_service
+        self.dev_guild_id = dev_guild_id
+
+    
+        self.server_group = Group(
+            name="server",
+            description="Manage game servers",
+        )
+        self.create_group = Group(
+            name="create",
+            description="Create a new game server (instantly starts up)",
+            parent=self.server_group,
+        )
+        self.delete_group = Group(
+            name="delete",
+            description="Delete all data of game server",
+            parent=self.server_group
+        )
+        self.edit_group = Group(
+            name="edit",
+            description="Edit attributes of game server",
+            parent=self.server_group
+        )
+        self.backup_group = Group(
+            name="backup",
+            description="Backup current state of game server",
+            parent=self.server_group
+        )
+        self.restore_group = Group(
+            name="restore",
+            description="Restore previous state of game server",
+            parent=self.server_group
+        )
+        self.list_backups_group = Group(
+            name="list-backups",
+            description="List backups of game server",
+            parent=self.server_group
+        )
+        self.delete_backup_group = Group(
+            name="delete-backup",
+            description="Deletes a backup of a game server world",
+            parent=self.server_group,
+        )
+        self.reset_group = Group(
+            name="reset",
+            description="Resets game server world",
+            parent=self.server_group
+        )
+
+        for command_manager in self.command_managers.values():
+            game_group = Group(
+                name=command_manager.config.group_name,
+                description=f"{command_manager.config.game_name} specific commands",
+                parent=self.server_group,
+            )
+
+            command_manager.register_commands(
+                game_group=game_group,
+                create_group=self.create_group,
+                delete_group=self.delete_group,
+                reset_group=self.reset_group,
+                edit_group=self.edit_group,
+                backup_group=self.backup_group,
+                list_backups_group=self.list_backups_group,
+                delete_backup_group=self.delete_backup_group,
+                restore_group=self.restore_group,
+            )
+
+
+    async def setup_hook(self):
+        await self.load_extension("bot.commands.general")
+        await self.load_extension("bot.commands.admin")
+        await self.load_extension("bot.commands.server")
+
+        self.tree.add_command(self.server_group)
+
+        if self.dev_guild_id:
+            guild = discord.Object(id=self.dev_guild_id)
+
+            self.tree.copy_global_to(guild=guild)
+            await self.tree.sync(guild=guild)
+
+            print(
+                f"[bot] Commands synced to development guild "
+                f"{self.dev_guild_id}"
+            )
+        else:
+            await self.tree.sync()
+
+            print("[bot] Global commands synced.")
+
+    async def on_ready(self):
+        print(
+            f"[bot] Logged in as {self.user} "
+            f"(app_id={self.application_id})"
+        )
+
+        print(
+            f"[bot] Connected guilds: "
+            f"{[guild.id for guild in self.guilds]}"
+        )
