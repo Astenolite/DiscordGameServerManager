@@ -45,6 +45,6 @@ class MinecraftServerCreate(ServerCreate):
             "render_distance": render_distance
         }
 
-        await super(interaction, context)
+        await super().create_server(interaction, context)
 
         
