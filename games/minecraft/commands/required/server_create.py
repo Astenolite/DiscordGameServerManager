@@ -1,26 +1,13 @@
-import traceback
 import discord
 
-from discord.app_commands import Group
 from discord import app_commands
 from typing_extensions import Literal
 
-from games.abstract.commands.commands import Commands
-
-from games.minecraft.minecraft_server_manager import MinecraftServerManager
+from games.abstract.commands.required.server_create import ServerCreate
 
 
-class ServerCreate(Commands):
-    def __init__(self, server_manager: MinecraftServerManager):
-        super().__init__(server_manager)
 
-
-    def register(self, group: Group):
-        group.command(
-            name="minecraft",
-            description=f"Create a Minecraft server"
-        )(self.create_server)
-
+class MinecraftServerCreate(ServerCreate):
 
     async def create_server(
         self,
@@ -58,14 +45,6 @@ class ServerCreate(Commands):
             "render_distance": render_distance
         }
 
-        await interaction.response.defer(thinking=True)
-
-        try:
-            await self.server_manager.create_server(context)
-
-            await interaction.followup.send(f"Server `{server_name}` created and started successfully.")
-        except Exception as e:
-            traceback.print_exc()
-            await interaction.followup.send(f"Error creating server: `{e}`")
+        await super(interaction, context)
 
         

@@ -1,25 +1,11 @@
-import traceback
 import discord
 
-from discord.app_commands import Group
 from discord import app_commands
 from typing_extensions import Literal
 
-from games.abstract.commands.commands import Commands
+from games.abstract.commands.required.server_create import ServerCreate
 
-from games.ark_survival_ascended.ark_survival_ascended_server_manager import ArkSurvivalAscendedServerManager
-
-
-class ServerCreate(Commands):
-    def __init__(self, server_manager: ArkSurvivalAscendedServerManager):
-        super().__init__(server_manager)
-
-
-    def register(self, group: Group):
-        group.command(
-            name="ark-survival-ascended",
-            description=f"Create an Ark Survival Ascended server"
-        )(self.create_server)
+class ArkSurvivalAscendedServerCreate(ServerCreate):
 
 
     async def create_server(
@@ -52,14 +38,6 @@ class ServerCreate(Commands):
             "max_players": max_players,
         }
 
-        await interaction.response.defer(thinking=True)
-
-        try:
-            await self.server_manager.create_server(context)
-
-            await interaction.followup.send(f"Server `{server_name}` created and started successfully.")
-        except Exception as e:
-            traceback.print_exc()
-            await interaction.followup.send(f"Error creating server: `{e}`")
+        await super().create_server(interaction, context)
 
         

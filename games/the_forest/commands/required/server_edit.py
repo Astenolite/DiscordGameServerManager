@@ -1,25 +1,13 @@
-import traceback
 import discord
 
-from discord.app_commands import Group
 from discord import app_commands
 from typing_extensions import Literal
 
-from games.abstract.commands.commands import Commands
-
-from games.minecraft.minecraft_server_manager import MinecraftServerManager
+from games.abstract.commands.required.server_edit import ServerEdit
 
 
-class ServerEdit(Commands):
-    def __init__(self, server_manager: MinecraftServerManager):
-        super().__init__(server_manager)
 
-
-    def register(self, group: Group):
-        group.command(
-            name="the-forest",
-            description=f"Edit a The Forest server"
-        )(self.edit_server)
+class TheForestServerEdit(ServerEdit):
 
     async def edit_server(
         self,
@@ -50,19 +38,4 @@ class ServerEdit(Commands):
             "difficulty": difficulty
         }
 
-        await interaction.response.defer(thinking=True)
-
-        try:
-            await self.server_manager.edit_server(context)
-
-            await interaction.followup.send(
-                f"Server `{server_name}` edited successfully."
-            )
-
-        except Exception as e:
-            traceback.print_exc()
-            await interaction.followup.send(
-                f"Error editing server: `{e}`"
-            )
-
-    
+        await super().edit_server(interaction, context)
