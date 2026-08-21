@@ -26,17 +26,28 @@ class DockerManager:
         )
 
     async def compose_up(self, compose_file: Path) -> None:
-            subprocess.run(
-                [
-                    "docker",
-                    "compose",
-                    "-f",
-                    str(compose_file),
-                    "up",
-                    "-d",
-                ],
-                check=True,
-            )
+        subprocess.run(
+            [
+                "docker",
+                "compose",
+                "-f",
+                str(compose_file),
+                "up",
+                "-d",
+                "--wait",
+            ],
+            check=True,
+        )
+        subprocess.run(
+            [
+                "docker",
+                "compose",
+                "-f",
+                str(compose_file),
+                "stop"
+            ],
+            check=True
+        )
     
 
     async def compose_down(self, compose_file: Path):
