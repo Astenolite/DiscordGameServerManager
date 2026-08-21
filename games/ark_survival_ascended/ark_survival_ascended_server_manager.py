@@ -16,7 +16,6 @@ class ArkSurvivalAscendedServerManager(GameServerManager):
     # throws error if a cluster with provided name does not exist
     async def cluster_existence_check(self, cluster_name: str) -> None:
         clusters = await self.get_clusters()
-        print(clusters, flush=True)
         if cluster_name not in [cluster["name"] for cluster in clusters]:
             raise ValueError(f"Cluster {cluster_name} does not exist.")
 
