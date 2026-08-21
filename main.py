@@ -51,7 +51,7 @@ async def main():
     print("[main] ServerManager created", flush=True)
 
     game_managers = {}
-    command_managers = {}
+    command_managers = []
 
     for GameManager, CommandManager in GAME_REGISTRY.values():
         print(f"[main] Creating {GameManager.__name__}", flush=True)
@@ -72,7 +72,7 @@ async def main():
         )
 
         game_managers[game_manager.config.game_name] = game_manager
-        command_managers[game_manager.config.game_name] = command_manager
+        command_managers.append((command_manager, game_manager.config.group_name, game_manager.config.game_name))
 
     print("[main] Creating bot", flush=True)
 
