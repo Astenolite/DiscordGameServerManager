@@ -38,7 +38,7 @@ class ArkSurvivalAscendedServerManager(GameServerManager):
         servers = self.get_servers(cluster_name)
         online_servers = []
         for server in servers:
-            if self.server_manager.docker_manager.is_online(server):
+            if await self.server_manager.docker_manager.is_online(server):
                 online_servers.append(server)
 
         if len(online_servers) > 0:
@@ -123,7 +123,7 @@ class ArkSurvivalAscendedServerManager(GameServerManager):
     async def add_mod(self, cluster_name: str, mod_id: int, mod_name: str, mod_type: str):
         await self.cluster_existence_check(cluster_name)
         await self.cluster_offline_check(cluster_name)
-        await self.mod_existence_check(cluster_name, mod_id)
+        await self.mod_nonexistence_check(cluster_name, mod_id)
 
         # add mod to cluster context
         context = await self.server_manager.data_manager.read_context_file(self.get_cluster_compose_directory(cluster_name))
@@ -134,6 +134,9 @@ class ArkSurvivalAscendedServerManager(GameServerManager):
         # edit all servers in cluster 
         for server_name in self.get_servers(cluster_name):
             context = {
+                "game_port": None,
+                "steam_port": None,
+                "max_players": None,
                 "server_name": server_name,
                 "mods": ",".join(map(str, mod_ids)),
                 "compose_directory_path": str(self.get_server_compose_directory(cluster_name, server_name)),
@@ -146,7 +149,7 @@ class ArkSurvivalAscendedServerManager(GameServerManager):
     async def remove_mod(self, cluster_name: str, mod_id: int):
         await self.cluster_existence_check(cluster_name)
         await self.cluster_offline_check(cluster_name)
-        await self.mod_nonexistence_check(cluster_name, mod_id)
+        await self.mod_existence_check(cluster_name, mod_id)
 
         # remove mod from cluster context
         context = await self.server_manager.data_manager.read_context_file(self.get_cluster_compose_directory(cluster_name))
@@ -157,6 +160,9 @@ class ArkSurvivalAscendedServerManager(GameServerManager):
         # edit all servers in cluster 
         for server_name in self.get_servers(cluster_name):
             context = {
+                "game_port": None,
+                "steam_port": None,
+                "max_players": None,
                 "server_name": server_name,
                 "mods": ",".join(map(str, mod_ids)),
                 "compose_directory_path": str(self.get_server_compose_directory(cluster_name, server_name)),
