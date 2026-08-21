@@ -26,7 +26,7 @@ class ServerManager:
         self.backup_manager = backup_manager
 
         self.compose_directory = Path(compose_directory)
-        self.servers_directory = Path(servers_directory)
+        self.containers_directory = Path(servers_directory)
         self.backups_directory = Path(backups_directory)
 
     
@@ -71,7 +71,7 @@ class ServerManager:
                     pass
 
             self.data_manager.delete_directory(Path(context["compose_directory_path"]))
-            self.data_manager.delete_directory(Path(context["server_directory_path"]))
+            self.data_manager.delete_directory(Path(context["container_directory_path"]))
 
             raise ValueError("Server could not be created.") from e
 
@@ -83,7 +83,7 @@ class ServerManager:
         try:
             await self.docker_manager.compose_down(Path(context["compose_file"]))
             await self.data_manager.delete_directory(Path(context["compose_directory_path"]))
-            await self.data_manager.delete_directory(Path(context["server_directory_path"]))
+            await self.data_manager.delete_directory(Path(context["container_directory_path"]))
         except Exception as e:
             raise ValueError("Server could not be deleted.") from e
 

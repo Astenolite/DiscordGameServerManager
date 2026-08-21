@@ -15,7 +15,7 @@ services:
         - steam-1:/home/gameserver/Steam:rw
         - steamcmd-1:/home/gameserver/steamcmd:rw
         - /etc/localtime:/etc/localtime:ro
-        - "{{ server_directory_path }}:/home/gameserver/server-files:rw"
+        - "{{ container_directory_path }}:/home/gameserver/server-files:rw"
         - "{{ cluster_directory_path }}:/home/gameserver/cluster-shared:rw"
 
     depends_on:
@@ -35,7 +35,7 @@ services:
     volumes:
       - steam-1:/steam:rw
       - steamcmd-1:/steamcmd:rw
-      - "{{ server_directory_path }}:/server-files:rw"
+      - "{{ container_directory_path }}:/server-files:rw"
       - "{{ cluster_directory_path }}:/cluster-shared:rw"
 volumes:
   cluster-shared:

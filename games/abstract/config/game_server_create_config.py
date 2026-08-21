@@ -11,4 +11,4 @@ class GameServerCreateConfig(BaseModel):
 
     compose_directory_path: str
     compose_file: str
-    server_directory_path: str
+    container_directory_path: str

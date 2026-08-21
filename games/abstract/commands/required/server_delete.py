@@ -2,23 +2,15 @@ import traceback
 import discord
 
 from discord.app_commands import Group
-from discord import app_commands
-from typing_extensions import Literal
-
 from games.abstract.commands.commands import Commands
-
-from games.minecraft.minecraft_server_manager import MinecraftServerManager
 
 
 class ServerDelete(Commands):
-    def __init__(self, server_manager: MinecraftServerManager):
-        super().__init__(server_manager)
-
 
     def register(self, group: Group):
         group.command(
-            name="minecraft",
-            description=f"Delete a Minecraft server"
+            name=f"{self.group_name}",
+            description=f"Delete a(n) {self.game_name} server"
         )(self.delete_server)
 
 
@@ -27,14 +19,11 @@ class ServerDelete(Commands):
         interaction: discord.Interaction,
         server_name: str,
     ): 
-        context = {
-            "server_name": server_name,
-        }
 
         await interaction.response.defer(thinking=True)
 
         try:
-            await self.server_manager.delete_server(context)
+            await self.server_manager.delete_server(server_name)
 
             await interaction.followup.send(f"Server `{server_name}` deleted successfully.")
         except Exception as e:

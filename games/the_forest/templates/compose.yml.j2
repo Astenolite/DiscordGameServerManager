@@ -10,8 +10,8 @@ services:
       - "{{ port3 }}:27016"
 
     volumes:
-      - "{{ server_directory_path }}/saves:/savesMultiplayer"
-      - "{{ server_directory_path }}/game:/game"
+      - "{{ container_directory_path }}/saves:/savesMultiplayer"
+      - "{{ container_directory_path }}/game:/game"
 
     environment:
       SERVER_STEAM_ACCOUNT: "{{ server_steam_account }}"

@@ -2,23 +2,16 @@ import traceback
 import discord
 
 from discord.app_commands import Group
-
 from games.abstract.commands.commands import Commands
-
-from games.the_forest.the_forest_server_manager import TheForestServerManager
 
 
 class ServerBackup(Commands):
-    def __init__(self, server_manager: TheForestServerManager):
-        super().__init__(server_manager)
-
 
     def register(self, group: Group):
         group.command(
-            name="the-forest",
-            description=f"Backup the world of a The Forest server"
+            name=f"{self.group_name}",
+            description=f"Backup the world of an {self.game_name} server"
         )(self.backup_server)
-
 
     async def backup_server(
         self,

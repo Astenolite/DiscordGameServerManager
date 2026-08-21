@@ -72,10 +72,10 @@ class GameServerManagerBot(commands.Bot):
             parent=self.server_group
         )
 
-        for command_manager in self.command_managers.values():
+        for command_manager, group_name, game_name in self.command_managers:
             game_group = Group(
-                name=command_manager.config.group_name,
-                description=f"{command_manager.config.game_name} specific commands",
+                name=group_name,
+                description=f"{game_name} specific commands",
                 parent=self.server_group,
             )
 

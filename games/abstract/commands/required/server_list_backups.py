@@ -3,25 +3,19 @@ import discord
 
 from datetime import datetime
 from discord.app_commands import Group
-
 from games.abstract.commands.commands import Commands
-
-from games.minecraft.minecraft_server_manager import MinecraftServerManager
 
 
 class ServerListBackups(Commands):
-    def __init__(self, server_manager: MinecraftServerManager):
-        super().__init__(server_manager)
-
 
     def register(self, group: Group):
         group.command(
-            name="minecraft",
-            description=f"List available backups for a Minecraft server"
-        )(self.backups_server)
+            name=f"{self.group_name}",
+            description=f"List available backups for an {self.game_name} server"
+        )(self.list_backups)
 
 
-    async def backups_server(
+    async def list_backups(
         self,
         interaction: discord.Interaction,
         server_name: str
@@ -82,8 +76,6 @@ class ServerListBackups(Commands):
 
         except Exception as e:
             traceback.print_exc()
-            await interaction.followup.send(
-                f"❌ Error finding backups for server: `{e}`"
-            )
+            await interaction.followup.send(f"Error finding backups for server: `{e}`")
 
         

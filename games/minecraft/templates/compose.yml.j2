@@ -8,7 +8,7 @@ services:
       - "{{ port }}:25565"
 
     volumes:
-      - "{{ server_directory_path }}/data:/data"
+      - "{{ container_directory_path }}/data:/data"
 
     environment:
       EULA: "TRUE"

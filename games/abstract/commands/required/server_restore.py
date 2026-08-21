@@ -2,21 +2,15 @@ import traceback
 import discord
 
 from discord.app_commands import Group
-
 from games.abstract.commands.commands import Commands
-
-from games.minecraft.minecraft_server_manager import MinecraftServerManager
 
 
 class ServerRestore(Commands):
-    def __init__(self, server_manager: MinecraftServerManager):
-        super().__init__(server_manager)
-
 
     def register(self, group: Group):
         group.command(
-            name="minecraft",
-            description=f"Restore the world of a Minecraft server from a backup"
+            name=f"{self.group_name}",
+            description=f"Restore the world of a(n) {self.game_name} server from a backup"
         )(self.restore_server)
 
 
