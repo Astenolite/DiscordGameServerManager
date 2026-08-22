@@ -16,3 +16,30 @@ class MinecraftConfig(GameConfig):
         "data/world_the_end"
     ]
     backup_no = 5
+    java_versions = [
+        {
+            "min_minecraft": "1.12",
+            "max_minecraft": "1.16.5",
+            "container_java": "java8" 
+        },
+        {
+            "min_minecraft": "1.17",
+            "max_minecraft": "1.17.1",
+            "container_java": "java16" 
+        },
+        {
+            "min_minecraft": "1.18",
+            "max_minecraft": "1.20.4",
+            "container_java": "java17" 
+        },
+        {
+            "min_minecraft": "1.20.5",
+            "max_minecraft": "1.21.11",
+            "container_java": "java21" 
+        },
+        {
+            "min_minecraft": "1.20.5",
+            "max_minecraft": "2", # latest version
+            "container_java": "java25" 
+        },
+    ]

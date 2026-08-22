@@ -16,6 +16,7 @@ class MinecraftServerCreateConfig(GameServerCreateConfig):
     ] = "VANILLA"
 
     version: str = "LATEST"
+    java_version: str = "java25"
 
     memory: int = Field(default=4, ge=1)
 

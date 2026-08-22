@@ -16,6 +16,7 @@ class MinecraftServerEditConfig(GameServerEditConfig):
     ] | None
 
     version: str | None
+    java_version: str | None
 
     memory: int | None = Field(ge=1)
 

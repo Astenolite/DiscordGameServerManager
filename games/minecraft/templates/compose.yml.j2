@@ -1,6 +1,6 @@
 services:
   mc:
-    image: itzg/minecraft-server:latest
+    image: itzg/minecraft-server:{{ java_version }}
     container_name: "{{ server_name }}"
     restart: unless-stopped
 
