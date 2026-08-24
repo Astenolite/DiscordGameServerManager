@@ -215,7 +215,8 @@ class ArkSurvivalAscendedServerManager(GameServerManager):
 
         server_name = context["server_name"]
         cluster_name = self.get_server_cluster(server_name)
-
+        
+        context["mods"] = None
         context["compose_directory_path"] = str(self.get_server_compose_directory(cluster_name, server_name))
         context["compose_file"] = str(self.get_server_compose_file(cluster_name, server_name))
 
