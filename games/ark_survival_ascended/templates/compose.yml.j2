@@ -1,29 +1,29 @@
 services:
   asa-server-1:
     image: mschnitzer/asa-linux-server:latest
-    container_name: "{{ server_name }}"
+    container_name: {{ server_name }}
     restart: unless-stopped
     user: gameserver
     entrypoint: /usr/bin/start_server
     tty: true
 
     ports:
-        - "{{ game_port }}:7777/udp"
-        - "{{ steam_port }}:27015/udp"
+        - {{ game_port }}:{{ game_port }}/udp
+        - {{ steam_port }}:27015/udp
 
     volumes:
         - steam-1:/home/gameserver/Steam:rw
         - steamcmd-1:/home/gameserver/steamcmd:rw
         - /etc/localtime:/etc/localtime:ro
-        - "{{ container_directory_path }}:/home/gameserver/server-files:rw"
-        - "{{ cluster_directory_path }}:/home/gameserver/cluster-shared:rw"
+        - {{ container_directory_path }}:/home/gameserver/server-files:rw
+        - {{ cluster_directory_path }}:/home/gameserver/cluster-shared:rw
 
     depends_on:
         set-permissions-1:
             condition: service_completed_successfully
 
     environment:
-      - ASA_START_PARAMS={{ map_name }}?listen?Port=7777? -WinLiveMaxPlayers={{ max_players }} -clusterid={{ cluster_id }} -ClusterDirOverride="/home/gameserver/cluster-shared" -ServerPlatform=ALL -mods={{ mods }}
+      - ASA_START_PARAMS={{ map_name }}?listen?Port={{ game_port }}?SessionName="{{ server_name }}" -WinLiveMaxPlayers={{ max_players }} -clusterid={{ cluster_id }} -ClusterDirOverride="/home/gameserver/cluster-shared" -ServerPlatform=ALL -mods={{ mods }}
       - ENABLE_DEBUG=0
 
     networks:
@@ -35,8 +35,8 @@ services:
     volumes:
       - steam-1:/steam:rw
       - steamcmd-1:/steamcmd:rw
-      - "{{ container_directory_path }}:/server-files:rw"
-      - "{{ cluster_directory_path }}:/cluster-shared:rw"
+      - {{ container_directory_path }}:/server-files:rw
+      - {{ cluster_directory_path }}:/cluster-shared:rw
 volumes:
   cluster-shared:
   steam-1:
