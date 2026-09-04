@@ -16,6 +16,7 @@ class MinecraftConfig(GameConfig):
         "data/world_the_end"
     ]
     backup_no = 5
+    startup_string = None
     java_versions = [
         {
             "min_minecraft": "1.12",
