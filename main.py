@@ -33,7 +33,7 @@ async def main():
     data_manager = DataManager()
     print("[main] DataManager created", flush=True)
 
-    compose_manager = ComposeManager("games/")
+    compose_manager = ComposeManager("games/", data_manager)
     print("[main] ComposeManager created", flush=True)
 
     backup_manager = BackupManager(data_manager)
