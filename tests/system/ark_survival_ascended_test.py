@@ -28,15 +28,16 @@ container_directory_path = GAME_SERVERS_DIRECTORY_PATH / ArkSurvivalAscendedConf
 final_cluster_context = {"name": cluster_name, "id": cluster_id, "mods": []}
 final_server_context = {
     "server_name": server_name,
-    "compose_directory_path": compose_directory_path,
-    "compose_file": compose_file,
-    "container_directory_path": container_directory_path,
+    "compose_directory_path": str(compose_directory_path),
+    "compose_file": str(compose_file),
+    "container_directory_path": str(container_directory_path),
+    "cluster_directory_path": str(GAME_SERVERS_DIRECTORY_PATH / ArkSurvivalAscendedConfig.system_name / cluster_name / "cluster"),
     "game_port": 25000,
     "steam_port": 25001,
-    "map_name": "TheIsland",
+    "map_name": "TheIsland_WP",
     "max_players": 5,
     "cluster_id": cluster_id,
-    "mods": [],
+    "mods": '',
 }
 
 @pytest.fixture
@@ -120,7 +121,7 @@ async def test_ark_survival_ascended_lifecycle(setup_directories, server_manager
         "server_name": server_name,
         "game_port": 25000,
         "steam_port": 25001,
-        "map_name": "TheIsland",
+        "map_name": "TheIsland_WP",
         "max_players": 5,
     }
 
