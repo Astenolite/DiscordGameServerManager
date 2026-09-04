@@ -100,24 +100,24 @@ class GameServerManager(ABC):
             raise ValueError("Invalid server parameters") from e
 
         try:
-            self.compose_manager.render(
-                template_path=str(context["model_path"]),
+            await self.compose_manager.render(
+                template_path=str(self.config.compose_template),
                 output_path=Path(context["compose_file"]),
-                context=config
+                context=config.model_dump()
             )
             await self.docker_manager.compose_up(context["compose_file"])
 
         except Exception as e:
             if Path(context["compose_file"]).exists():
                 try:
-                    self.docker_manager.compose_down(context["compose_file"])
+                    await self.docker_manager.compose_down(context["compose_file"])
                 except Exception:
                     pass
 
-            self.data_manager.delete_directory(Path(context["compose_directory_path"]))
-            self.data_manager.delete_directory(Path(context["container_directory_path"]))
+            await self.data_manager.delete_directory(Path(context["compose_directory_path"]))
+            await self.data_manager.delete_directory(Path(context["container_directory_path"]))
 
-            raise ValueError("Server could not be created.") from e
+            raise # raise ValueError("Server could not be created.") from e
     
 
     # Edits a server
@@ -134,10 +134,10 @@ class GameServerManager(ABC):
             raise ValueError("Invalid server parameters") from e
         
         try:
-            self.compose_manager.edit(
+            await self.compose_manager.edit(
                 template_path=str(context["model_path"]),
                 existing_file=Path(context["compose_file"]),
-                new_context=config
+                new_context=config.model_dump()
             )
             await self.docker_manager.compose_up(context["compose_file"])
         except Exception as e:
