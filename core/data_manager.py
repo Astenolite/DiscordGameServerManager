@@ -21,8 +21,8 @@ class DataManager:
             check=True
         )
 
-    async def create_context_file(self, file_path: Path, context: dict):
-        context_file = file_path / "context.json"
+    async def create_context_file(self, directory: Path, context: dict):
+        context_file = directory / "context.json"
         temporary_context_file = context_file.with_suffix(context_file.suffix + ".tmp")
 
         try:
@@ -39,8 +39,8 @@ class DataManager:
             temporary_context_file.unlink(missing_ok=True)
             raise
 
-    async def read_context_file(self, context_directory: str) -> dict:
-        context_file = context_directory / "context.json"
+    async def read_context_file(self, directory: str) -> dict:
+        context_file = directory / "context.json"
 
         if not context_file.exists():
             raise FileNotFoundError(f"{context_file} file does not exist.")

@@ -15,7 +15,7 @@ class ComposeManager:
         self.data_manager = data_manager
 
     # Creates compose file
-    def render(self, template_path: str, output_path: Path, context: dict) -> None:
+    async def render(self, template_path: str, output_path: Path, context: dict) -> None:
         template = self._environment.get_template(template_path)
 
         # Render first. If Jinja fails, nothing has been created on disk yet.
@@ -26,15 +26,12 @@ class ComposeManager:
             exist_ok=True,
         )
 
-        context_file = output_path.parent / "context.json"
+        context_directory = output_path.parent
 
         temporary_compose_file = output_path.with_suffix(
             output_path.suffix + ".tmp"
         )
 
-        temporary_context_file = context_file.with_suffix(
-            context_file.suffix + ".tmp"
-        )
 
         try:
             
@@ -45,19 +42,17 @@ class ComposeManager:
             )
 
             # Write context to temporary JSON file.
-            self.data_manager.create_context_file(context_file, context)
+            await self.data_manager.create_context_file(context_directory, context)
 
             # Only replace the real files after both writes succeeded.
             temporary_compose_file.replace(output_path)
-            temporary_context_file.replace(context_file)
 
         except Exception:
             temporary_compose_file.unlink(missing_ok=True)
-            temporary_context_file.unlink(missing_ok=True)
             raise
 
     # Edits existing compose file
-    def edit(self, template_path: str, existing_file: Path, new_context: dict):
+    async def edit(self, template_path: str, existing_file: Path, new_context: dict):
         context_file = existing_file.parent / "context.json"
 
         if not existing_file.exists():
@@ -71,7 +66,7 @@ class ComposeManager:
             )
 
         # Load the context originally used to create the compose file.
-        context = self.data_manager.read_context_file(context_file)
+        context = await self.data_manager.read_context_file(context_file)
 
         # Replace only the values supplied in the new context.
         context.update(new_context)
