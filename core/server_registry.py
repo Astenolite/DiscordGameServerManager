@@ -13,7 +13,7 @@ class ServerRegistry:
     def __init__(self, compose_directory: Path):
         self.compose_directory = Path(compose_directory)
 
-    def get_servers(self) -> list[GameServer]:
+    async def get_servers(self) -> list[GameServer]:
         servers = []
 
         for game_directory in self.compose_directory.iterdir():

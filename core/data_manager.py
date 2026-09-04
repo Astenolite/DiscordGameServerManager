@@ -39,8 +39,8 @@ class DataManager:
             temporary_context_file.unlink(missing_ok=True)
             raise
 
-    async def read_context_file(self, context_file_path: str) -> dict:
-        context_file = context_file_path / "context.json"
+    async def read_context_file(self, context_directory: str) -> dict:
+        context_file = context_directory / "context.json"
 
         if not context_file.exists():
             raise FileNotFoundError(f"{context_file} file does not exist.")
@@ -137,5 +137,8 @@ class DataManager:
             check=True,
         )
 
-    
-    
+    async def file_exists(self, file_path: str) -> bool:
+        return Path(file_path).is_file()
+
+    async def directory_exists(self, directory_path: str) -> bool:
+        return Path(directory_path).is_dir()

@@ -34,12 +34,12 @@ class ServerManager:
 
     
     async def nonexistence_check(self, server_name: str):
-        server_name_list = [server.name for server in self.server_registry.get_servers()]
+        server_name_list = [server.name for server in await self.server_registry.get_servers()]
         if server_name in server_name_list:
             raise ValueError(f"{server_name} already exists.")
 
     async def existence_check(self, server_name: str):
-        server_name_list = [server.name for server in self.server_registry.get_servers()]
+        server_name_list = [server.name for server in await self.server_registry.get_servers()]
         if server_name not in server_name_list:
             raise ValueError(f"{server_name} doesn't exist.")
 

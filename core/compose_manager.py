@@ -2,15 +2,17 @@ import json
 
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
-
+from core.data_manager import DataManager
 
 class ComposeManager:
-    def __init__(self, templates_directory: Path):
+    def __init__(self, templates_directory: Path, data_manager: DataManager):
         self._environment = Environment(
             loader=FileSystemLoader(templates_directory),
             undefined=StrictUndefined,
             autoescape=False,
         )
+
+        self.data_manager = data_manager
 
     # Creates compose file
     def render(self, template_path: str, output_path: Path, context: dict) -> None:
@@ -35,6 +37,7 @@ class ComposeManager:
         )
 
         try:
+            
             # Write compose file to temporary file.
             temporary_compose_file.write_text(
                 content,
@@ -42,13 +45,7 @@ class ComposeManager:
             )
 
             # Write context to temporary JSON file.
-            temporary_context_file.write_text(
-                json.dumps(
-                    context,
-                    indent=4,
-                ),
-                encoding="utf-8",
-            )
+            self.data_manager.create_context_file(context_file, context)
 
             # Only replace the real files after both writes succeeded.
             temporary_compose_file.replace(output_path)
@@ -74,9 +71,7 @@ class ComposeManager:
             )
 
         # Load the context originally used to create the compose file.
-        context = json.loads(
-            context_file.read_text(encoding="utf-8")
-        )
+        context = self.data_manager.read_context_file(context_file)
 
         # Replace only the values supplied in the new context.
         context.update(new_context)
