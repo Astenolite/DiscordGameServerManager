@@ -3,7 +3,6 @@ import traceback
 from discord import app_commands
 from discord.ext import commands
 
-from games.registry import GAME_REGISTRY
 
 def embeded_status(server_name: str, status: dict):
     if not status["running"]:
@@ -116,26 +115,6 @@ class ServerCommands(commands.Cog):
 
     def register(self):
         self.bot.server_group.command(
-            name="start",
-            description="Start server"
-        )(self.start_server)
-
-        self.bot.server_group.command(
-            name="query",
-            description="Query server"
-        )(self.status_server)
-
-        self.bot.server_group.command(
-            name="restart",
-            description="Restart server"
-        )(self.restart_server)
-
-        self.bot.server_group.command(
-            name="stop",
-            description="Stop server"
-        )(self.stop_server)
-
-        self.bot.server_group.command(
             name="list",
             description="List all servers"
         )(self.list_servers)
@@ -145,50 +124,6 @@ class ServerCommands(commands.Cog):
             description="Get game of server"
         )(self.get_game)
 
-    
-    async def start_server(self, interaction: discord.Interaction, server_name: str):
-        await interaction.response.defer(thinking=True)
-        
-        try:
-            await self.server_manager.start_server(server_name)
-
-            await interaction.followup.send(f"Server `{server_name}` started successfully.")
-        except Exception as e:
-            traceback.print_exc()
-            await interaction.followup.send(f"Error starting server: `{e}`")
-
-    async def status_server(self, interaction: discord.Interaction, server_name: str):
-        await interaction.response.defer(thinking=True)
-
-        try:
-            status = await self.server_manager.status_server(server_name)
-
-            embed = embeded_status(server_name, status)
-
-            await interaction.followup.send(embed=embed)
-        except Exception as e:
-            traceback.print_exc()
-            await interaction.followup.send(f"Error querying server: `{e}`")
-
-    async def restart_server(self, interaction: discord.Interaction, server_name: str):
-        await interaction.response.defer(thinking=True)
-        try:
-            await self.server_manager.restart_server(server_name)
-
-            await interaction.followup.send(f"Server `{server_name}` restared sucessfully")
-        except Exception as e:
-            traceback.print_exc()
-            await interaction.followup.send(f"Error restarting server: `{e}`")
-
-    async def stop_server(self, interaction: discord.Interaction, server_name: str):
-        await interaction.response.defer(thinking=True)
-        try:
-            await self.server_manager.stop_server(server_name)
-
-            await interaction.followup.send(f"Server `{server_name}` stoped sucessfully")
-        except Exception as e:
-            traceback.print_exc()
-            await interaction.followup.send(f"Error stoping server: `{e}`")
 
     async def list_servers(self, interaction: discord.Interaction):
         await interaction.response.defer(thinking=True)
@@ -215,15 +150,7 @@ class ServerCommands(commands.Cog):
         except Exception as e:
             traceback.print_exc()
             await interaction.followup.send(f"Error establishing nature of server: `{e}`")
-        
-    async def delete_server(self, interaction: discord.Interaction, server_name: str):
-        await interaction.response.defer(thinking=True)
-        try:
-            self.server_manager.delete_server(server_name)
-            await interaction.followup.send(f"Server `{server_name}` sucessfully deleted")
-        except Exception as e:
-            traceback.print_exc()
-            await interaction.followup.send(f"Error deleting server: `{e}`")
+
         
 async def setup(bot):
     cog = ServerCommands(bot)
