@@ -80,6 +80,7 @@ set +a
 : "${COMPOSE_FILES_DIRECTORY_PATH:?COMPOSE_FILES_DIRECTORY_PATH is not set}"
 : "${GAME_SERVERS_DIRECTORY_PATH:?GAME_SERVERS_DIRECTORY_PATH is not set}"
 : "${BACKUPS_DIRECTORY_PATH:?BACKUPS_DIRECTORY_PATH is not set}"
+: "${TESTS_DIRECTORY_PATH:?TESTS_DIRECTORY_PATH is not set}"
 
 #
 # Require absolute paths
@@ -109,6 +110,11 @@ validate_absolute_path \
 validate_absolute_path \
     "BACKUPS_DIRECTORY_PATH" \
     "$BACKUPS_DIRECTORY_PATH"
+
+validate_absolute_path \
+    "TESTS_DIRECTORY_PATH" \
+    "$TESTS_DIRECTORY_PATH"
+   
 
 
 #

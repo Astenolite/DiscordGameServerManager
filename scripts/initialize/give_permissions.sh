@@ -17,6 +17,7 @@ fi
 : "${COMPOSE_FILES_DIRECTORY_PATH:?COMPOSE_FILES_DIRECTORY_PATH is not set}"
 : "${GAME_SERVERS_DIRECTORY_PATH:?GAME_SERVERS_DIRECTORY_PATH is not set}"
 : "${BACKUPS_DIRECTORY_PATH:?BACKUPS_DIRECTORY_PATH is not set}"
+: "${TESTS_DIRECTORY_PATH:?TESTS_DIRECTORY_PATH is not set}"
 
 # Make sure ACL tools are available.
 if ! command -v setfacl >/dev/null 2>&1; then
@@ -127,6 +128,7 @@ configure_directory() {
 configure_directory "$COMPOSE_FILES_DIRECTORY_PATH"
 configure_directory "$GAME_SERVERS_DIRECTORY_PATH"
 configure_directory "$BACKUPS_DIRECTORY_PATH"
+configure_directory "$TESTS_DIRECTORY_PATH"
 
 echo
 echo "Permission setup complete."
@@ -139,3 +141,4 @@ echo "Managed directories:"
 echo "  Compose:    $COMPOSE_FILES_DIRECTORY_PATH"
 echo "  Servers:    $GAME_SERVERS_DIRECTORY_PATH"
 echo "  Backups:    $BACKUPS_DIRECTORY_PATH"
+echo "  Tests:      $TESTS_DIRECTORY_PATH"
