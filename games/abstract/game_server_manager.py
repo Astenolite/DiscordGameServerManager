@@ -92,7 +92,6 @@ class GameServerManager(ABC):
     # Creates a server
     @abstractmethod
     async def create_server(self, context: dict) -> None:
-        await self.server_type_check(context["server_name"])
         await self.nonexistence_check(context["server_name"])
 
         try:
@@ -124,6 +123,7 @@ class GameServerManager(ABC):
     # Edits a server
     @abstractmethod
     async def edit_server(self, context: dict) -> None:
+        await self.server_type_check(context["server_name"])
         await self.existence_check(context["server_name"])
         await self.container_check(context["server_name"])
         await self.offline_check(context["server_name"])
