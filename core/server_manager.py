@@ -15,6 +15,7 @@ class ServerManager:
         data_manager: DataManager, 
         server_registry: ServerRegistry,
         backup_manager: BackupManager,
+        game_manager_helpers: list[dict],
         compose_directory: Path,
         servers_directory: Path,
         backups_directory: Path
@@ -24,6 +25,8 @@ class ServerManager:
         self.data_manager = data_manager
         self.server_registry = server_registry
         self.backup_manager = backup_manager
+
+        self.game_manager_helpers = game_manager_helpers
 
         self.compose_directory = Path(compose_directory)
         self.containers_directory = Path(servers_directory)
@@ -52,72 +55,55 @@ class ServerManager:
         if not await self.docker_manager.is_online(server_name):
             raise ValueError(f"{server_name} must be online.")
 
-    async def create_server(self, context: dict, model_path: str):
-        await self.nonexistence_check(context["server_name"])
 
-        try:
-            self.compose_manager.render(
-                template_path=str(model_path),
-                output_path=Path(context["compose_file"]),
-                context=context
-            )
-            await self.docker_manager.compose_up(context["compose_file"])
+    async def get_helper(self, server_name: str):
+        image = self.docker_manager.get_container_image(server_name)
+        if self.game_manager_helpers.get(image) is None:
+            raise RuntimeError(f"Game module for {server_name} server can not be found.")
+        return self.game_manager_helpers[image]
 
-        except Exception as e:
-            if Path(context["compose_file"]).exists():
-                try:
-                    self.docker_manager.compose_down(context["compose_file"])
-                except Exception:
-                    pass
+    async def get_backups(self, backup_directory: str) -> list:
+        return self.backup_manager.get_backups(backup_directory)
 
-            self.data_manager.delete_directory(Path(context["compose_directory_path"]))
-            self.data_manager.delete_directory(Path(context["container_directory_path"]))
 
-            raise ValueError("Server could not be created.") from e
+    async def delete_server(self, server_name: str):
+        await self.existence_check(server_name)
+        await self.container_check(server_name)
+        await self.offline_check(server_name)
 
-    async def delete_server(self, context: dict):
-        await self.existence_check(context["server_name"])
-        await self.container_check(context["server_name"])
-        await self.offline_check(context["server_name"])
+        helper = await self.get_helper(server_name)
+        context = await helper.delete_server(server_name)
 
         try:
             await self.docker_manager.compose_down(Path(context["compose_file"]))
             await self.data_manager.delete_directory(Path(context["compose_directory_path"]))
             await self.data_manager.delete_directory(Path(context["container_directory_path"]))
         except Exception as e:
-            raise ValueError("Server could not be deleted.") from e
+            raise ValueError(f"Server {server_name} could not be deleted.") from e
 
-    async def edit_server(self, context: dict, model_path: str):
-        await self.existence_check(context["server_name"])
-        await self.container_check(context["server_name"])
-        await self.offline_check(context["server_name"])
 
-        try:
-            self.compose_manager.edit(
-                template_path=str(model_path),
-                existing_file=Path(context["compose_file"]),
-                new_context=context
-            )
-            await self.docker_manager.create(context["compose_file"])
-        except Exception as e:
-            raise ValueError("Server could not be edited.") from e
+    async def reset_server(self, server_name: str):
+        await self.existence_check(server_name)
+        await self.container_check(server_name)
+        await self.offline_check(server_name)
 
-    async def reset_server(self, context: dict):
-        await self.existence_check(context["server_name"])
-        await self.container_check(context["server_name"])
-        await self.offline_check(context["server_name"])
+        helper = await self.get_helper(server_name)
+        context = await helper.reset_server(server_name)
 
         try:
             for directory_path in context["server_data_directory_paths"]:
                 await self.data_manager.clear_directory(str(directory_path))
         except Exception as e:
-            raise ValueError("Server could not be reset") from e
+            raise ValueError(f"Server {server_name} could not be reset.") from e
 
-    async def backup_server(self, context: dict):
-        await self.existence_check(context["server_name"])
-        await self.container_check(context["server_name"])
-        await self.offline_check(context["server_name"])
 
+    async def backup_server(self, server_name: str):
+        await self.existence_check(server_name)
+        await self.container_check(server_name)
+        await self.offline_check(server_name)
+
+        helper = await self.get_helper(server_name)
+        context = await helper.backup_server(server_name)
         context["backup_name"] = datetime.now().strftime("Backup_%Y-%m-%d-%H-%M")
         
         try:
@@ -127,27 +113,55 @@ class ServerManager:
                 backup_directory_path=Path(context["backup_directory_path"]),
                 backup_name=context["backup_name"]
             )
-        except Exception as e:
-            raise ValueError("Server state could not be saved.") from e
 
-    async def delete_backup(self, context: dict):
+            backup_list = await self.get_backups(context["backup_directory_path"])
+            if len(backup_list) > context["max_backups"]:
+                await self.delete_backup(server_name, min(backup_list))
+                backup_list.remove(min(backup_list))
+
+        except Exception as e:
+            raise ValueError(f"Server {server_name} state could not be backed up.") from e
+
+
+    async def list_backups(self, server_name: str):
+        helper = await self.get_helper(server_name)
+        context = await helper.list_backups(server_name)
+
+        return await self.get_backups(context["backup_directory"])
+
+
+    async def delete_backup(self, server_name: str, backup_name: str):
+        helper = await self.get_helper(server_name)
+        context = await helper.delete_backup(server_name, backup_name)
+            
         try:
-            await self.backup_manager.delete_backup(
-                backup_directory_path=Path(context["backup_directory_path"]),
-                backup_name=context["backup_name"]
-            )
+            if backup_name == "all":
+                for backup in await self.get_backups(context["backup_directory_path"]):
+                    await self.backup_manager.delete_backup(
+                            backup_directory_path=Path(context["backup_directory_path"]),
+                            backup_name=backup
+                    )
+            else:
+                await self.backup_manager.delete_backup(
+                    backup_directory_path=Path(context["backup_directory_path"]),
+                    backup_name=backup_name
+                )
         except Exception as e:
-            raise ValueError("Backup could not be deleted.") from e
+            raise ValueError(f"Backup {backup_name} could not be deleted.") from e
 
-    async def restore_server(self, context: dict):
-        await self.existence_check(context["server_name"])
-        await self.container_check(context["server_name"])
-        await self.offline_check(context["server_name"])
+
+    async def restore_backup(self, server_name: str, backup_name: str):
+        await self.existence_check(server_name)
+        await self.container_check(server_name)
+        await self.offline_check(server_name)
+
+        helper = await self.get_helper(server_name)
+        context = await helper.restore_server(server_name, backup_name)
 
         if context["backup_name"] is None:
-            available_backups = self.backup_manager.get_backups(Path(context["backup_directory_path"]))
+            available_backups = await self.get_backups(context["backup_directory_path"])
             if not available_backups:
-                raise ValueError("No backups available for this server.")
+                raise ValueError(f"No backups available for server {server_name}.")
             context["backup_name"] = max(available_backups)
 
         try:
@@ -158,6 +172,7 @@ class ServerManager:
             )
         except Exception as e:
             raise ValueError("Server backup could not be restored.") from e
+        
 
     async def start_server(self, server_name: str):
         await self.existence_check(server_name)
