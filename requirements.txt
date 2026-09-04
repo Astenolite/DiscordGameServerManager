@@ -1,3 +1,5 @@
 discord.py
 Jinja2
 pydantic
+pytest
+pytest-asyncio
