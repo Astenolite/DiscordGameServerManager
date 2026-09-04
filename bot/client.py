@@ -8,7 +8,7 @@ class GameServerManagerBot(commands.Bot):
     def __init__(
         self,
         *,
-        command_managers: dict,
+        command_managers: list,
         server_manager, 
         guild_settings_service,
         permission_service,
@@ -36,39 +36,9 @@ class GameServerManagerBot(commands.Bot):
             description="Create a new game server (instantly starts up)",
             parent=self.server_group,
         )
-        self.delete_group = Group(
-            name="delete",
-            description="Delete all data of game server",
-            parent=self.server_group
-        )
         self.edit_group = Group(
             name="edit",
             description="Edit attributes of game server",
-            parent=self.server_group
-        )
-        self.backup_group = Group(
-            name="backup",
-            description="Backup current state of game server",
-            parent=self.server_group
-        )
-        self.restore_group = Group(
-            name="restore",
-            description="Restore previous state of game server",
-            parent=self.server_group
-        )
-        self.list_backups_group = Group(
-            name="list-backups",
-            description="List backups of game server",
-            parent=self.server_group
-        )
-        self.delete_backup_group = Group(
-            name="delete-backup",
-            description="Deletes a backup of a game server world",
-            parent=self.server_group,
-        )
-        self.reset_group = Group(
-            name="reset",
-            description="Resets game server world",
             parent=self.server_group
         )
 
@@ -82,13 +52,7 @@ class GameServerManagerBot(commands.Bot):
             command_manager.register_commands(
                 game_group=game_group,
                 create_group=self.create_group,
-                delete_group=self.delete_group,
-                reset_group=self.reset_group,
                 edit_group=self.edit_group,
-                backup_group=self.backup_group,
-                list_backups_group=self.list_backups_group,
-                delete_backup_group=self.delete_backup_group,
-                restore_group=self.restore_group,
             )
 
 
@@ -96,6 +60,8 @@ class GameServerManagerBot(commands.Bot):
         await self.load_extension("bot.commands.general")
         await self.load_extension("bot.commands.admin")
         await self.load_extension("bot.commands.server")
+        await self.load_extension("bot.commands.server_backups")
+        await self.load_extension("bot.commands.server_lifetime")
 
         self.tree.add_command(self.server_group)
 

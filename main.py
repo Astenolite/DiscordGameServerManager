@@ -34,8 +34,41 @@ async def main():
     print("[main] DataManager created", flush=True)
 
     compose_manager = ComposeManager("games/")
-    server_registry = ServerRegistry(COMPOSE_FILES_DIRECTORY_PATH)
+    print("[main] ComposeManager created", flush=True)
+
     backup_manager = BackupManager(data_manager)
+    print("[main] BackupManager created", flush=True)
+
+    server_registry = ServerRegistry(COMPOSE_FILES_DIRECTORY_PATH)
+
+    server_manager_helpers = {}
+    server_manager_extras = []
+    command_managers = []
+    for game_dict in GAME_REGISTRY:
+        ServerManagerHelper = game_dict["server_manager_helper"]
+        ServerManagerExtra = game_dict["server_manager_extra"]
+        CommandManager = game_dict["command_manager"]
+
+        server_manager_helpers[game_dict["image"]] = ServerManagerHelper(
+            compose_directory=COMPOSE_FILES_DIRECTORY_PATH,
+            containers_directory=GAME_SERVERS_DIRECTORY_PATH,
+            backups_directory=BACKUPS_DIRECTORY_PATH,
+        )
+
+        serverManagerExtra = ServerManagerExtra(
+            docker_manager=docker_manager,
+            compose_manager=compose_manager,
+            data_manager=data_manager,
+            server_registry=server_registry,
+            compose_directory=COMPOSE_FILES_DIRECTORY_PATH,
+            containers_directory=GAME_SERVERS_DIRECTORY_PATH,
+            backups_directory=BACKUPS_DIRECTORY_PATH,
+        )
+
+        commandManager = CommandManager(serverManagerExtra)
+        command_managers.append((commandManager, serverManagerExtra.config.group_name, serverManagerExtra.config.game_name))
+
+
 
     server_manager = ServerManager(
         compose_manager=compose_manager,
@@ -43,36 +76,12 @@ async def main():
         data_manager=data_manager,
         server_registry=server_registry,
         backup_manager=backup_manager,
+        game_manager_helpers=server_manager_helpers,
         compose_directory=Path(COMPOSE_FILES_DIRECTORY_PATH),
         servers_directory=Path(GAME_SERVERS_DIRECTORY_PATH),
         backups_directory=Path(BACKUPS_DIRECTORY_PATH),
     )
-
     print("[main] ServerManager created", flush=True)
-
-    game_managers = {}
-    command_managers = []
-
-    for GameManager, CommandManager in GAME_REGISTRY.values():
-        print(f"[main] Creating {GameManager.__name__}", flush=True)
-
-        game_manager = GameManager(server_manager)
-        command_manager = CommandManager(game_manager)
-
-        print(
-            f"[main] Running setup for {GameManager.__name__}",
-            flush=True,
-        )
-
-        await game_manager.setup()
-
-        print(
-            f"[main] Setup completed for {GameManager.__name__}",
-            flush=True,
-        )
-
-        game_managers[game_manager.config.game_name] = game_manager
-        command_managers.append((command_manager, game_manager.config.group_name, game_manager.config.game_name))
 
     print("[main] Creating bot", flush=True)
 
