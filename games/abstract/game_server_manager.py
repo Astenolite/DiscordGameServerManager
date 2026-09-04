@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from core.server_manager import ServerManager
+from core.docker_manager import DockerManager
+from core.compose_manager import ComposeManager
+from core.data_manager import DataManager
+from core.server_registry import ServerRegistry
 
 from .config.game_server_create_config import GameServerCreateConfig
 from .config.game_server_edit_config import GameServerEditConfig
@@ -13,57 +16,64 @@ class GameServerManager(ABC):
     server_create_config: type[GameServerCreateConfig]
     server_edit_config: type[GameServerEditConfig]
 
-    # Makes sure that mandatory attributes are present and of the correct types
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-
-        required_classes = {
-            "server_create_config": GameServerCreateConfig,
-            "server_edit_config": GameServerEditConfig,
-            "config": GameConfig
-        }
-
-        for name, expected_base in required_classes.items():
-            if name not in cls.__dict__:
-                raise TypeError(
-                    f"{cls.__name__} must define {name!r}"
-                )
-
-            value = getattr(cls, name)
-
-            if not isinstance(value, type):
-                raise TypeError(
-                    f"{cls.__name__}.{name} must be a class"
-                )
-
-            if not issubclass(value, expected_base):
-                raise TypeError(
-                    f"{cls.__name__}.{name} must be a subclass of "
-                    f"{expected_base.__name__}"
-                )
-
     # Sets the server_manager and the game specific workspace directories
     def __init__(
         self,
-        server_manager: ServerManager,
+        docker_manager: DockerManager,
+        compose_manager: ComposeManager,
+        data_manager: DataManager,
+        server_registry: ServerRegistry,
+        compose_directory: str,
+        containers_directory: str,
+        backups_directory: str,
     ):
-        self.server_manager = server_manager
+        self.docker_manager = docker_manager
+        self.compose_manager = compose_manager
+        self.data_manager = data_manager
+        self.server_registry = server_registry
         
-        self.compose_directory = server_manager.compose_directory / self.config.system_name
-        self.containers_directory = server_manager.containers_directory / self.config.system_name
-        self.backups_directory = server_manager.backups_directory / self.config.system_name
+        self.compose_directory = compose_directory / self.config.system_name
+        self.containers_directory = containers_directory / self.config.system_name
+        self.backups_directory = backups_directory / self.config.system_name
 
     # Creates the root directories of the workspace
     async def setup(self):
-        await self.server_manager.data_manager.create_directory(self.compose_directory)
-        await self.server_manager.data_manager.create_directory(self.containers_directory)
-        await self.server_manager.data_manager.create_directory(self.backups_directory)
+        await self.data_manager.create_directory(self.compose_directory)
+        await self.data_manager.create_directory(self.containers_directory)
+        await self.data_manager.create_directory(self.backups_directory)
+
+    async def get_compose_directory(self, server_name: str) -> Path:
+        return self.compose_directory / server_name
+
+    async def get_container_directory(self, server_name: str) -> Path:
+        return self.containers_directory / server_name
+
+    async def get_backup_directory(self, server_name: str) -> Path:
+        return self.backups_directory / server_name
+
+
+    async def nonexistence_check(self, server_name: str):
+        server_name_list = [server.name for server in self.server_registry.get_servers()]
+        if server_name in server_name_list:
+            raise ValueError(f"{server_name} already exists.")
+
+    async def existence_check(self, server_name: str):
+        server_name_list = [server.name for server in self.server_registry.get_servers()]
+        if server_name not in server_name_list:
+            raise ValueError(f"{server_name} doesn't exist.")
+
+    async def container_check(self, server_name: str):
+        if not await self.docker_manager.container_exists(server_name):
+            raise ValueError(f"{server_name} container could not be found.")
+
+    async def offline_check(self, server_name: str):
+        if await self.docker_manager.is_online(server_name):
+            raise ValueError(f"{server_name} must be offline.")
 
     # throws error if server game is not the same as manager game
     async def server_type_check(self, server_name: str) -> None:
         if server_name not in self.get_server_list():
             raise ValueError(f"{server_name} is not a(n) {self.config.game_name} server or doesn't exist.")
-
 
     # Constructs a list with the name of all *.yml files in the compose directory
     def get_server_list(self) -> list[str]:
@@ -82,97 +92,57 @@ class GameServerManager(ABC):
     # Creates a server
     @abstractmethod
     async def create_server(self, context: dict) -> None:
+        await self.server_type_check(context["server_name"])
+        await self.nonexistence_check(context["server_name"])
+
         try:
             config = self.server_create_config(**context)
         except Exception as e:
             raise ValueError("Invalid server parameters") from e
 
-        await self.server_manager.create_server(config.model_dump(), self.config.compose_template)
+        try:
+            self.compose_manager.render(
+                template_path=str(context["model_path"]),
+                output_path=Path(context["compose_file"]),
+                context=config
+            )
+            await self.docker_manager.compose_up(context["compose_file"])
 
-    # Deletes a server 
-    @abstractmethod
-    async def delete_server(self, context: dict) -> None:
-        await self.server_type_check(context["server_name"])
-        await self.server_manager.delete_server(context)
+        except Exception as e:
+            if Path(context["compose_file"]).exists():
+                try:
+                    self.docker_manager.compose_down(context["compose_file"])
+                except Exception:
+                    pass
+
+            self.data_manager.delete_directory(Path(context["compose_directory_path"]))
+            self.data_manager.delete_directory(Path(context["container_directory_path"]))
+
+            raise ValueError("Server could not be created.") from e
+    
 
     # Edits a server
     @abstractmethod
     async def edit_server(self, context: dict) -> None:
-        await self.server_type_check(context["server_name"])
+        await self.existence_check(context["server_name"])
+        await self.container_check(context["server_name"])
+        await self.offline_check(context["server_name"])
 
         try:
             config = self.server_edit_config(**context)
         except Exception as e:
             raise ValueError("Invalid server parameters") from e
-
-        await self.server_manager.edit_server(config.model_dump(exclude_none=True), self.config.compose_template)
-
-    # Resets the world of a server
-    @abstractmethod
-    async def reset_server(self, server_name: str, server_container_directory: str) -> None:
-        context = {
-            "server_name": server_name,
-            "server_data_directory_paths": []
-        }
-        for world_directory in self.config.world_directories:
-            context["server_data_directory_paths"].append((
-                server_container_directory /
-                world_directory
-            ))
-
-        await self.server_manager.reset_server(context)
-
-    # Backs up the world of a server
-    @abstractmethod
-    async def backup_server(self, server_name: str, server_container_directory: str, server_backup_directory: str) -> None:
-        context = {
-            "server_name": server_name,
-            "active_data": self.config.world_directories,
-            "backup_directory_path": server_backup_directory,
-            "active_directory_path": server_container_directory,
-        }
-
-        await self.server_manager.backup_server(context)
-
-        backups_list = await self.list_backups(server_name)
         
-        while len(backups_list) > self.config.backup_no:
-            await self.delete_backup(server_name, min(backups_list))
-            backups_list.remove(min(backups_list))
-
-    # Restores the server state from a backup
-    @abstractmethod
-    async def restore_server(self, server_name: str, backup_name: str, server_container_directory: str, server_backup_directory: str) -> None:
-        context = {
-            "server_name": server_name,
-            "backup_name": backup_name,
-            "active_directory_path": server_container_directory,
-            "backup_directory_path": server_backup_directory,
-        }
-
-        await self.server_manager.restore_server(context)
-
-    # Lists backups of a server
-    @abstractmethod 
-    async def list_backups(self, server_name: str) -> None:
-        ...
-
-    # Delete one or all backups
-    @abstractmethod
-    async def delete_backup(self, server_name: str, backup_directory_path: str, backup_name) -> None:
-        if backup_name == "all":
-            for backup in await self.list_backups(server_name):
-                context = {
-                    "backup_name": backup,
-                    "backup_directory_path": backup_directory_path
-                }
-                await self.server_manager.delete_backup(context)
-        else:
-            complete_context = {
-                "backup_name": backup_name,
-                "backup_directory_path": backup_directory_path
-            }
-            await self.server_manager.delete_backup(complete_context)
+        try:
+            self.compose_manager.edit(
+                template_path=str(context["model_path"]),
+                existing_file=Path(context["compose_file"]),
+                new_context=config
+            )
+            await self.docker_manager.compose_up(context["compose_file"])
+        except Exception as e:
+            raise ValueError("Server could not be edited.") from e
+        await self.server_type_check(context["server_name"])
 
         
 
