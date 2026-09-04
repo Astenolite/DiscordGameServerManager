@@ -13,7 +13,7 @@ class GameConfig:
     compose_template: ClassVar[Path]
     world_directories: ClassVar[list[str]]
     backup_no: ClassVar[int]
-    startup_string: ClassVar[str]
+    startup_string: ClassVar[str | None]
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)

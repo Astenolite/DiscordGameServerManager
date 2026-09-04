@@ -179,7 +179,9 @@ class ServerManager:
         await self.container_check(server_name)
         await self.offline_check(server_name)
 
-        await self.docker_manager.start(server_name)
+        helper = await self.get_helper(server_name)
+
+        await self.docker_manager.start(server_name, helper.get_startup_string(server_name))
 
     async def stop_server(self, server_name: str):
         await self.existence_check(server_name)
@@ -192,7 +194,9 @@ class ServerManager:
         await self.existence_check(server_name)
         await self.container_check(server_name)
 
-        await self.docker_manager.restart(server_name)
+        helper = await self.get_helper(server_name)
+        
+        await self.docker_manager.restart(server_name, helper.get_startup_string(server_name))
 
     async def status_server(self, server_name: str) -> dict:
         await self.existence_check(server_name)

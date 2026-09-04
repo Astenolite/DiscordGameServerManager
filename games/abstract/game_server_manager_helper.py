@@ -68,6 +68,9 @@ class GameServerManagerHelper(ABC):
     async def get_compose_file(self, server_name: str) -> Path:
         server_compose_directory = await self.get_compose_directory(server_name)
         return server_compose_directory / server_name / f"{server_name}.yml"
+
+    async def get_startup_string(self, server_name: str) -> str:
+        return self.config.startup_string
     
 
     # Deletes a server
