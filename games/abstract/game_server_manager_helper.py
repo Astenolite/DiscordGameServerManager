@@ -66,8 +66,13 @@ class GameServerManagerHelper(ABC):
         return world_directory_list
 
     async def get_compose_file(self, server_name: str) -> Path:
-        server_compose_directory = await self.get_compose_directory(server_name)
-        return server_compose_directory / server_name / f"{server_name}.yml"
+        return await self.get_compose_directory(server_name) / f"{server_name}.yml"
+
+    async def get_startup_string(self, server_name: str) -> str:
+        return self.config.startup_string
+
+    async def get_save_command(self, server_name: str) -> list[str]:
+        return self.config.save_command
     
 
     # Deletes a server
