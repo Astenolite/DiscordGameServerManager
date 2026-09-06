@@ -2,6 +2,7 @@ import asyncio
 import json
 import subprocess
 import docker
+import time
 
 from datetime import datetime
 from pathlib import Path
@@ -123,56 +124,71 @@ class DockerManager:
             errors="replace",
         )
 
-    def _wait_for_startup_log(self, container: Container, startup_string: str) -> None:
-        for line in container.logs(
-            stream=True,
-            follow=True,
-            stdout=True,
-            stderr=True,
-        ):
-            decoded_line = line.decode(
+    async def start(self, container_name: str, startup_string: str | None = None, timeout: int = 600, check_interval: float = 0.5) -> None:
+        container = await self.get_container(container_name)
+
+        # Record this BEFORE starting so we don't miss very early logs.
+        started_at = int(time.time()) - 1
+
+        await asyncio.to_thread(container.start)
+
+        if startup_string is None:
+            return
+
+        deadline = asyncio.get_running_loop().time() + timeout
+
+        while True:
+            await asyncio.to_thread(container.reload)
+
+            if container.status != "running":
+                logs = await asyncio.to_thread(
+                    container.logs,
+                    stdout=True,
+                    stderr=True,
+                    since=started_at,
+                )
+
+                logs = logs.decode(
+                    "utf-8",
+                    errors="replace",
+                )
+
+                raise RuntimeError(
+                    f"Container {container_name} stopped during startup.\n"
+                    f"Logs:\n{logs[-5000:]}"
+                )
+
+            logs = await asyncio.to_thread(
+                container.logs,
+                stdout=True,
+                stderr=True,
+                since=started_at,
+            )
+
+            decoded_logs = logs.decode(
                 "utf-8",
                 errors="replace",
             )
 
-            if startup_string in decoded_line:
+            if startup_string in decoded_logs:
                 return
 
-            container.reload()
-
-            if container.status != "running":
-                raise RuntimeError(
-                    f"Container {container.name} stopped during startup."
+            if asyncio.get_running_loop().time() >= deadline:
+                raise TimeoutError(
+                    f"Container {container_name} did not finish startup "
+                    f"within {timeout} seconds.\n"
+                    f"Waiting for: {startup_string!r}\n"
+                    f"Last logs:\n{decoded_logs[-5000:]}"
                 )
 
-    async def start(self, container_name: str, startup_string: str | None = None, timeout: int = 120) -> None:
-        container = await self.get_container(container_name)
-
-        await asyncio.to_thread(container.start)
-
-        # If no startup string is supplied, only start the container.
-        if startup_string is None:
-            return
-
-        try:
-            await asyncio.wait_for(
-                asyncio.to_thread(
-                    self._wait_for_startup_log,
-                    container,
-                    startup_string,
-                ),
-                timeout=timeout,
-            )
-
-        except asyncio.TimeoutError as e:
-            raise TimeoutError(f"Container {container_name} did not finish startup within {timeout} seconds.") from e
+            await asyncio.sleep(check_interval)
 
     async def stop(self, container_name: str) -> None:
         container = await self.get_container(container_name)
 
         await asyncio.to_thread(container.stop)
 
-    async def restart(self, container_name: str, startup_string: str | None = None, timeout: int = 120) -> None:
+    async def restart(self, container_name: str, startup_string: str | None = None, timeout: int = 600) -> None:
         container = await self.get_container(container_name)
 
         await asyncio.to_thread(container.restart)
