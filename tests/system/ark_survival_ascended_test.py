@@ -79,7 +79,7 @@ async def server_managers(setup_directories):
             backups_directory=BACKUPS_DIRECTORY_PATH,
         )
 
-        if game_dict["name"] == "ArkSurvivalAscended":
+        if game_dict["name"] == ArkSurvivalAscendedConfig.game_name:
             server_manager_extra = ServerManagerExtra(
                 docker_manager=docker_manager,
                 compose_manager=compose_manager,
@@ -109,7 +109,7 @@ async def server_managers(setup_directories):
     )
 
 
-async def test_ark_survival_ascended_lifecycle(setup_directories, server_managers):
+async def test_ark_survival_ascended_lifecycle(server_managers):
     server_manager = server_managers.server_manager
     server_manager_extra = server_managers.server_manager_extra
     data_manager = DataManager()
@@ -127,71 +127,86 @@ async def test_ark_survival_ascended_lifecycle(setup_directories, server_manager
 
         
 
-    # Create cluster
+    print(f"[{ArkSurvivalAscendedConfig.game_name}] Testing cluster creation", flush=True)
     await server_manager_extra.create_cluster(cluster_name, cluster_id)
-    assert await data_manager.directory_exists(COMPOSE_FILES_DIRECTORY_PATH / ArkSurvivalAscendedConfig.system_name / cluster_name) is True # check cluster directory exists
-    assert await data_manager.file_exists(COMPOSE_FILES_DIRECTORY_PATH / ArkSurvivalAscendedConfig.system_name / cluster_name / "context.json") is True # check context file exists
+    assert await data_manager.directory_exists(COMPOSE_FILES_DIRECTORY_PATH / ArkSurvivalAscendedConfig.system_name / cluster_name) # check cluster directory exists
+    assert await data_manager.file_exists(COMPOSE_FILES_DIRECTORY_PATH / ArkSurvivalAscendedConfig.system_name / cluster_name / "context.json") # check context file exists
     assert await data_manager.read_context_file(COMPOSE_FILES_DIRECTORY_PATH / ArkSurvivalAscendedConfig.system_name / cluster_name) == final_cluster_context # check cluster context is correct
+    print(f"[{ArkSurvivalAscendedConfig.game_name}] Cluster creation successful", flush=True)
 
 
-    # Create server
+    print(f"[{ArkSurvivalAscendedConfig.game_name}] Testing server creation", flush=True)
     await server_manager_extra.create_server(discord_context)
-    assert await data_manager.directory_exists(compose_directory_path) is True # check server directory exists
-    assert await data_manager.file_exists(compose_file) is True # check compose file exists
-    assert await data_manager.file_exists(compose_directory_path / "context.json") is True # check context file exists
+    assert await data_manager.directory_exists(compose_directory_path) # check server directory exists
+    assert await data_manager.file_exists(compose_file) # check compose file exists
+    assert await data_manager.file_exists(compose_directory_path / "context.json") # check context file exists
     assert await data_manager.read_context_file(compose_directory_path) == final_server_context # check server context is correct
-    assert await docker_manager.container_exists(server_name) is True # check container was created
-    assert await docker_manager.is_online(server_name) is False # check container is offline
-
+    assert await docker_manager.container_exists(server_name) # check container was created
+    assert await docker_manager.container_isOnline(server_name) is False # check container is offline
+    print(f"[{ArkSurvivalAscendedConfig.game_name}] Server creation successful", flush=True)
 
     # Start server
+    print(f"[{ArkSurvivalAscendedConfig.game_name}] Testing server startup", flush=True)
     await server_manager.start_server(server_name)
-    assert await docker_manager.is_online(server_name) is True # check server turns on
+    assert await docker_manager.container_isOnline(server_name) # check server turns on
     # TODO add check for server health
+    print(f"[{ArkSurvivalAscendedConfig.game_name}] Server startup successful", flush=True)
 
 
     # Stop server
+    print(f"[{ArkSurvivalAscendedConfig.game_name}] Testing server stoping", flush=True)
     await server_manager.stop_server(server_name)
-    assert await docker_manager.is_online(server_name) is False # check server turns off
+    assert await docker_manager.container_isOnline(server_name) is False # check server turns off
+    print(f"[{ArkSurvivalAscendedConfig.game_name}] Server stoping successful", flush=True)
 
-
+    print(f"[{ArkSurvivalAscendedConfig.game_name}] Testing server backup", flush=True)
+    for world_directory in ArkSurvivalAscendedConfig.world_directories:
+        await data_manager.create_directory(container_directory_path / world_directory)
     for i, world_directory in enumerate(ArkSurvivalAscendedConfig.world_directories):
         await data_manager.create_context_file(container_directory_path / world_directory, {"file": i})
 
-    # Backup server
     await server_manager.backup_server(server_name)
     backups_list = await server_manager.list_backups(server_name)
     assert len(backups_list) == 1 # check only one backup exists
     for i, world_directory in enumerate(ArkSurvivalAscendedConfig.world_directories):
-        assert await data_manager.file_exists(BACKUPS_DIRECTORY_PATH / ArkSurvivalAscendedConfig.system_name / cluster_name / server_name / backups_list[0] / world_directory / "context.json") is True # check files exist
+        assert await data_manager.file_exists(BACKUPS_DIRECTORY_PATH / ArkSurvivalAscendedConfig.system_name / cluster_name / server_name / backups_list[0] / world_directory / "context.json") # check files exist
         assert await data_manager.read_context_file(BACKUPS_DIRECTORY_PATH / ArkSurvivalAscendedConfig.system_name / cluster_name / server_name / backups_list[0] / world_directory) == {"file": i} # check file contents are correct
+    print(f"[{ArkSurvivalAscendedConfig.game_name}] Server backup successful", flush=True)
 
-    # Reset server
+
+    print(f"[{ArkSurvivalAscendedConfig.game_name}] Testing server reset", flush=True)
     await server_manager.reset_server(server_name)
     for i, world_directory in enumerate(ArkSurvivalAscendedConfig.world_directories):
         assert await data_manager.file_exists(container_directory_path / world_directory / "context.json") is False # check all previously created files dissapeared
+    print(f"[{ArkSurvivalAscendedConfig.game_name}] Server reset successful", flush=True)
 
     # Restore server
+    print(f"[{ArkSurvivalAscendedConfig.game_name}] Testing server restore", flush=True)
     await server_manager.restore_backup(server_name)
     for i, world_directory in enumerate(ArkSurvivalAscendedConfig.world_directories):
-        assert await data_manager.file_exists(container_directory_path / world_directory / "context.json") is True # check files exist
+        assert await data_manager.file_exists(container_directory_path / world_directory / "context.json") # check files exist
         assert await data_manager.read_context_file(container_directory_path / world_directory) == {"file": i} # check file contents are correct
+    print(f"[{ArkSurvivalAscendedConfig.game_name}] Server restore successful", flush=True)
 
     # Delete backup
+    print(f"[{ArkSurvivalAscendedConfig.game_name}] Testing backup deletion", flush=True)
     await server_manager.delete_backup(server_name, backups_list[0])
     assert await data_manager.directory_exists(BACKUPS_DIRECTORY_PATH / ArkSurvivalAscendedConfig.system_name / cluster_name / server_name / backups_list[0]) is False # check directory doesn't exist anymore
     assert len(await server_manager.list_backups(server_name)) == 0 # check 0 backups are reported
+    print(f"[{ArkSurvivalAscendedConfig.game_name}] Backup deletion successful", flush=True)
 
-    # Delete server
+
+    print(f"[{ArkSurvivalAscendedConfig.game_name}] Testing server deletion", flush=True)
     await server_manager.delete_server(server_name)
     assert await docker_manager.container_exists(server_name) is False # check docker container no longer exists
     assert await data_manager.directory_exists(container_directory_path) is False # check container mounts were deleted
     assert await data_manager.directory_exists(compose_directory_path) is False # check compose directory was deleted
+    print(f"[{ArkSurvivalAscendedConfig.game_name}] Server deletion successful", flush=True)
 
-    # Delete cluster
+    print(f"[{ArkSurvivalAscendedConfig.game_name}] Testing cluster deletion", flush=True)
     await server_manager_extra.delete_cluster(cluster_name)
     assert await data_manager.directory_exists(COMPOSE_FILES_DIRECTORY_PATH / ArkSurvivalAscendedConfig.system_name / cluster_name) is False # check cluster compose directory was deleted
     assert await data_manager.directory_exists(GAME_SERVERS_DIRECTORY_PATH / ArkSurvivalAscendedConfig.system_name / cluster_name) is False # check cluster compose directory was deleted
-
+    print(f"[{ArkSurvivalAscendedConfig.game_name}] Cluster deletion successful", flush=True)
 
 
