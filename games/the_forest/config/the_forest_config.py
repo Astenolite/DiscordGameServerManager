@@ -14,3 +14,5 @@ class TheForestConfig(GameConfig):
         "saves",
     ]
     backup_no = 3
+    startup_string = None
+    save_command = []

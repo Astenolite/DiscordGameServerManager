@@ -16,6 +16,7 @@ class MinecraftConfig(GameConfig):
         "data/world_the_end"
     ]
     backup_no = 5
+    startup_string = "Thread RCON Listener started"
     java_versions = [
         {
             "min_minecraft": "1.12",
@@ -43,3 +44,4 @@ class MinecraftConfig(GameConfig):
             "container_java": "java25" 
         },
     ]
+    save_command = ["rcon-cli", "save-all", "flush"]

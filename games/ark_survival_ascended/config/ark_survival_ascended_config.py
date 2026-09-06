@@ -13,3 +13,5 @@ class ArkSurvivalAscendedConfig(GameConfig):
         "ShooterGame/Saved/Config/WindowsServer",
     ]
     backup_no = 5
+    startup_string = "fsync: up and running."
+    save_command = ["rconcli",  "SaveWorld"]
