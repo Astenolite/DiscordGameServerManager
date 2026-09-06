@@ -26,9 +26,9 @@ class MinecraftServerManager(GameServerManager):
 
     async def create_server(self, context: dict):
         context["java_version"] = self.get_java_version(context["version"])
-        context["container_directory_path"] = str(self.get_container_directory(context["server_name"]))
-        context["compose_directory_path"] = str(self.get_compose_directory(context["server_name"]))
-        context["compose_file"] = str(self.get_compose_file(context["server_name"]))
+        context["container_directory_path"] = str(await self.get_container_directory(context["server_name"]))
+        context["compose_directory_path"] = str(await self.get_compose_directory(context["server_name"]))
+        context["compose_file"] = str(await self.get_compose_file(context["server_name"]))
 
         await super().create_server(context)
 

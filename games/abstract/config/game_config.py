@@ -14,6 +14,7 @@ class GameConfig:
     world_directories: ClassVar[list[str]]
     backup_no: ClassVar[int]
     startup_string: ClassVar[str | None]
+    save_command: ClassVar[list[str]]
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -27,6 +28,7 @@ class GameConfig:
             "world_directories",
             "backup_no",
             "startup_string",
+            "save_command",
         )
 
         for field_name in required_fields:

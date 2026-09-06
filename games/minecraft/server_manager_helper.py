@@ -3,4 +3,3 @@ from .config.minecraft_config import MinecraftConfig
 
 class ServerManagerHelper(GameServerManagerHelper):
     config = MinecraftConfig
-    ...

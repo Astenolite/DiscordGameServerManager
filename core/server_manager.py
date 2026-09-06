@@ -48,16 +48,16 @@ class ServerManager:
             raise ValueError(f"{server_name} container could not be found.")
 
     async def offline_check(self, server_name: str):
-        if await self.docker_manager.is_online(server_name):
+        if await self.docker_manager.container_isOnline(server_name):
             raise ValueError(f"{server_name} must be offline.")
 
     async def online_check(self, server_name: str):
-        if not await self.docker_manager.is_online(server_name):
+        if not await self.docker_manager.container_isOnline(server_name):
             raise ValueError(f"{server_name} must be online.")
 
 
     async def get_helper(self, server_name: str):
-        image = self.docker_manager.get_container_image(server_name)
+        image = await self.docker_manager.get_container_image(server_name)
         if self.game_manager_helpers.get(image) is None:
             raise RuntimeError(f"Game module for {server_name} server can not be found.")
         return self.game_manager_helpers[image]
@@ -127,7 +127,7 @@ class ServerManager:
         helper = await self.get_helper(server_name)
         context = await helper.list_backups(server_name)
 
-        return await self.get_backups(context["backup_directory"])
+        return await self.get_backups(context["backup_directory_path"])
 
 
     async def delete_backup(self, server_name: str, backup_name: str):
@@ -150,7 +150,7 @@ class ServerManager:
             raise ValueError(f"Backup {backup_name} could not be deleted.") from e
 
 
-    async def restore_backup(self, server_name: str, backup_name: str):
+    async def restore_backup(self, server_name: str, backup_name: str = None):
         await self.existence_check(server_name)
         await self.container_check(server_name)
         await self.offline_check(server_name)
@@ -180,14 +180,19 @@ class ServerManager:
         await self.offline_check(server_name)
 
         helper = await self.get_helper(server_name)
+        startup_string = await helper.get_startup_string(server_name)
 
-        await self.docker_manager.start(server_name, helper.get_startup_string(server_name))
+        await self.docker_manager.start(server_name, startup_string)
 
     async def stop_server(self, server_name: str):
         await self.existence_check(server_name)
         await self.container_check(server_name)
         await self.online_check(server_name)
 
+        helper = await self.get_helper(server_name)
+        save_command = await helper.get_save_command(server_name)
+
+        await self.docker_manager.execute_command(server_name, save_command)
         await self.docker_manager.stop(server_name)
 
     async def restart_server(self, server_name: str):
@@ -195,8 +200,12 @@ class ServerManager:
         await self.container_check(server_name)
 
         helper = await self.get_helper(server_name)
-        
-        await self.docker_manager.restart(server_name, helper.get_startup_string(server_name))
+        startup_string = await helper.get_startup_string(server_name)
+        save_command = await helper.get_save_command(server_name)
+
+        await self.docker_manager.execute_command(server_name, save_command)
+        await self.docker_manager.stop(server_name)
+        await self.docker_manager.start(server_name, startup_string)
 
     async def status_server(self, server_name: str) -> dict:
         await self.existence_check(server_name)

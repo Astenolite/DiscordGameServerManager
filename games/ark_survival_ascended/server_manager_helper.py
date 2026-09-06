@@ -22,7 +22,8 @@ class ServerManagerHelper(GameServerManagerHelper):
     async def get_backup_directory(self, server_name: str) -> Path:
         return self.backups_directory / self.get_server_cluster(server_name) / server_name
 
-
+    async def get_compose_file(self, server_name: str) -> Path:
+        return self.compose_directory / self.get_server_cluster(server_name) / server_name / f"{server_name}.yml"
 
     
 

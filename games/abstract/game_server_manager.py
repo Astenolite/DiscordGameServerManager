@@ -51,6 +51,9 @@ class GameServerManager(ABC):
     async def get_backup_directory(self, server_name: str) -> Path:
         return self.backups_directory / server_name
 
+    async def get_compose_file(self, server_name: str) -> Path:
+        return await self.get_compose_directory(server_name) / f"{server_name}.yml"
+
 
     async def nonexistence_check(self, server_name: str):
         server_name_list = [server.name for server in await self.server_registry.get_servers()]
@@ -67,7 +70,7 @@ class GameServerManager(ABC):
             raise ValueError(f"{server_name} container could not be found.")
 
     async def offline_check(self, server_name: str):
-        if await self.docker_manager.is_online(server_name):
+        if await self.docker_manager.container_isOnline(server_name):
             raise ValueError(f"{server_name} must be offline.")
 
     # throws error if server game is not the same as manager game
@@ -132,7 +135,7 @@ class GameServerManager(ABC):
             config = self.server_edit_config(**context)
         except Exception as e:
             raise ValueError("Invalid server parameters") from e
-        
+            ""
         try:
             await self.compose_manager.edit(
                 template_path=str(context["model_path"]),
