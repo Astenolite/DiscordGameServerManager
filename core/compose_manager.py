@@ -65,14 +65,13 @@ class ComposeManager:
                 f"Context file does not exist: {context_file}"
             )
 
-        # Load the context originally used to create the compose file.
+        self.data_manager.edit_context_file(context_file, new_context)
         context = await self.data_manager.read_context_file(context_file)
 
-        # Replace only the values supplied in the new context.
-        context.update(new_context)
+        print(context, flush=True)
 
         # Re-render the compose file and update context.json.
-        self.render(
+        await self.render(
             template_path=template_path,
             output_path=existing_file,
             context=context,
