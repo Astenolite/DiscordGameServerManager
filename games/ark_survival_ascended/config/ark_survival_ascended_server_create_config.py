@@ -20,7 +20,7 @@ class ArkSurvivalAscendedServerCreateConfig(GameServerCreateConfig):
         "Astraeos_WP",
         "Valguero_WP",
         "LostColony_WP",
-        "Genessis_WP"
+        "Genesis_WP"
     ] = "TheIsland_WP"
 
     max_players: int = Field(default=5, ge=1, le=50)
