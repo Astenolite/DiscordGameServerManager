@@ -138,7 +138,7 @@ class GameServerManager(ABC):
             ""
         try:
             await self.compose_manager.edit(
-                template_path=str(context["model_path"]),
+                template_path=str(self.config.compose_template),
                 existing_file=Path(context["compose_file"]),
                 new_context=config.model_dump()
             )

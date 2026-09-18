@@ -53,7 +53,7 @@ class ComposeManager:
 
     # Edits existing compose file
     async def edit(self, template_path: str, existing_file: Path, new_context: dict):
-        context_file = existing_file.parent / "context.json"
+        context_file = existing_file.parent
 
         if not existing_file.exists():
             raise FileNotFoundError(
