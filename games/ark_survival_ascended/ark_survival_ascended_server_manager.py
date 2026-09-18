@@ -37,7 +37,7 @@ class ArkSurvivalAscendedServerManager(GameServerManager):
         servers = self.get_servers(cluster_name)
         online_servers = []
         for server in servers:
-            if await self.docker_manager.is_online(server):
+            if await self.docker_manager.container_isOnline(server):
                 online_servers.append(server)
 
         if len(online_servers) > 0:
@@ -145,25 +145,25 @@ class ArkSurvivalAscendedServerManager(GameServerManager):
             await super().edit_server(context)
 
 
-    async def remove_mod(self, cluster_name: str, mod_id: int):
+    async def remove_mod(self, cluster_name: str, mod_ids: list[int]):
         await self.cluster_existence_check(cluster_name)
         await self.cluster_offline_check(cluster_name)
-        await self.mod_existence_check(cluster_name, mod_id)
 
-        # remove mod from cluster context
+        # Remove mods from cluster context
         context = await self.data_manager.read_context_file(self.get_cluster_compose_directory(cluster_name))
-        context["mods"] = [mod for mod in context["mods"] if mod[0] != mod_id]
-        mod_ids = [id for id, _, _ in context["mods"] if id != mod_id ]
+        context["mods"] = [mod for mod in context["mods"] if mod[0] not in mod_ids]
+        remaining_mod_ids = [mod_id for mod_id, _, _ in context["mods"]]
+
         await self.data_manager.edit_context_file(self.get_cluster_compose_directory(cluster_name), context)
 
-        # edit all servers in cluster 
+        # Edit all servers in cluster
         for server_name in self.get_servers(cluster_name):
             context = {
                 "game_port": None,
                 "steam_port": None,
                 "max_players": None,
                 "server_name": server_name,
-                "mods": ",".join(map(str, mod_ids)),
+                "mods": ",".join(map(str, remaining_mod_ids)),
                 "compose_directory_path": str(self.get_server_compose_directory(cluster_name, server_name)),
                 "compose_file": str(self.get_server_compose_file(cluster_name, server_name)),
             }
