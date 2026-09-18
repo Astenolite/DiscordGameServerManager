@@ -62,23 +62,25 @@ class ModCommands(Commands):
         self,
         interaction: discord.Interaction,
         cluster_name: str,
-        mod_id: int
+        mods: str
     ): 
         await interaction.response.defer(thinking=True)
 
-        try:
-            await self.server_manager.remove_mod(cluster_name, mod_id)
+        mod_ids = [int(mod_id.strip()) for mod_id in mods.split(",") if mod_id.strip()]
 
-            await interaction.followup.send(f"Mod `{mod_id}` was removed from cluster {cluster_name}.")
+        try:
+            await self.server_manager.remove_mod(cluster_name, mod_ids)
+
+            await interaction.followup.send(f"Mod(s) `{mod_ids}` were removed from cluster {cluster_name}.")
         except Exception as e:
             traceback.print_exc()
-            await interaction.followup.send(f"Error removing mod: `{e}`")
+            await interaction.followup.send(f"Error removing mod(s): `{e}`")
 
     async def list_mods(
         self,
         interaction: discord.Interaction,
         cluster_name: str,
-    ): 
+    ):
         await interaction.response.defer(thinking=True)
 
         try:
@@ -95,36 +97,80 @@ class ModCommands(Commands):
                 key=lambda mod: (mod[2].lower(), mod[1].lower())
             )
 
-            embed = discord.Embed(
-                title=f"Mods — {cluster_name}",
-                description=f"**{len(mod_list)} mod(s) installed**",
-                color=discord.Color.blurple(),
-            )
-
             # Group mods by type
             mods_by_type = {}
-            print(mod_list, flush=True)
 
             for mod_id, mod_name, mod_type in mod_list:
                 mods_by_type.setdefault(mod_type, []).append(
                     (mod_id, mod_name)
                 )
 
+            embeds = []
+
+            embed = discord.Embed(
+                title=f"Mods — {cluster_name}",
+                description=f"**{len(mod_list)} mod(s) installed**",
+                color=discord.Color.blurple(),
+            )
+
             for mod_type, mods in mods_by_type.items():
                 lines = [
-                    f"**{mod_name}** — {mod_type} (`{mod_id}`)"
+                    f"**{mod_name}** (`{mod_id}`)"
                     for mod_id, mod_name in mods
                 ]
 
-                embed.add_field(
-                    name=mod_type,
-                    value="\n".join(lines),
-                    inline=False,
-                )
+                # Split this mod type into chunks that fit in a field.
+                chunks = []
+                current_chunk = []
 
-            await interaction.followup.send(embed=embed)
+                for line in lines:
+                    candidate = "\n".join(current_chunk + [line])
+
+                    if len(candidate) > 1024:
+                        chunks.append("\n".join(current_chunk))
+                        current_chunk = [line]
+                    else:
+                        current_chunk.append(line)
+
+                if current_chunk:
+                    chunks.append("\n".join(current_chunk))
+
+                for index, chunk in enumerate(chunks):
+                    field_name = (
+                        mod_type
+                        if index == 0
+                        else f"{mod_type} (continued)"
+                    )
+
+                    # Start a new embed if adding this field would exceed
+                    # Discord's limits.
+                    if (
+                        len(embed.fields) >= 25
+                        or len(embed) + len(field_name) + len(chunk) > 6000
+                    ):
+                        embeds.append(embed)
+
+                        embed = discord.Embed(
+                            title=f"Mods — {cluster_name} (continued)",
+                            color=discord.Color.blurple(),
+                        )
+
+                    embed.add_field(
+                        name=field_name,
+                        value=chunk,
+                        inline=False,
+                    )
+
+            if embed.fields:
+                embeds.append(embed)
+
+            for embed in embeds:
+                await interaction.followup.send(embed=embed)
+
         except Exception as e:
             traceback.print_exc()
-            await interaction.followup.send(f"Error finding mods: `{e}`")
+            await interaction.followup.send(
+                f"Error finding mods: `{e}`"
+            )
 
         
