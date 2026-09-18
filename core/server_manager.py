@@ -191,8 +191,11 @@ class ServerManager:
 
         helper = await self.get_helper(server_name)
         save_command = await helper.get_save_command(server_name)
+        save_error_code = await self.docker_manager.execute_command(server_name, save_command)
 
-        await self.docker_manager.execute_command(server_name, save_command)
+        if save_error_code != 0:
+            raise RuntimeError(f"Server save failed to execute with error code {save_error_code}")
+
         await self.docker_manager.stop(server_name)
 
     async def restart_server(self, server_name: str):
@@ -214,7 +217,7 @@ class ServerManager:
         return await self.docker_manager.status(server_name)
 
     async def list_servers(self) -> list:
-        servers = [(server.name, server.game) for server in self.server_registry.get_servers()]
+        servers = [(server.name, server.game) for server in await self.server_registry.get_servers()]
         servers.sort(key=lambda server: (server[1].lower(), server[0].lower()))
         return servers
 
